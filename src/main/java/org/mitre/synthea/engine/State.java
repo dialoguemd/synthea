@@ -40,6 +40,7 @@ import org.mitre.synthea.world.concepts.HealthRecord.Code;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
 import org.mitre.synthea.world.concepts.HealthRecord.Entry;
 import org.mitre.synthea.world.concepts.HealthRecord.Medication;
+import org.mitre.synthea.world.concepts.HealthRecord.PatientCondition;
 import org.mitre.synthea.world.concepts.HealthRecord.Report;
 import org.simulator.math.odes.MultiTable;
 
@@ -814,6 +815,14 @@ public abstract class State implements Cloneable {
     public boolean process(Person person, long time) {
       HealthRecord.Encounter encounter = person.getCurrentEncounter(module);
 
+      String personID = (String) person.attributes.get(Person.ID);
+
+      Code conditionCode = codes.get(0);
+      PatientCondition patientCondition = person.record.new PatientCondition(time, conditionCode, personID);
+
+      // record on the patient
+      person.record.recordPatientCondition(patientCondition);
+
       if (targetEncounter == null || targetEncounter.trim().length() == 0
           || (encounter != null && targetEncounter.equals(encounter.name))) {
         diagnose(person, time);
@@ -853,6 +862,12 @@ public abstract class State implements Cloneable {
       }
 
       diagnosed = true;
+
+      // is there a patient condition that needs to be marked as diagnosed
+      PatientCondition condition = person.record.getUndiagnosedCondition(primaryCode);
+      if (condition != null) {
+        condition.diagnoseCondition(time);
+      }
     }
   }
 
@@ -916,6 +931,11 @@ public abstract class State implements Cloneable {
       }
 
       diagnosed = true;
+
+      PatientCondition condition = person.record.getUndiagnosedCondition(primaryCode);
+      if (condition != null) {
+        condition.diagnoseCondition(time);
+      }
     }
   }
 
@@ -1607,6 +1627,9 @@ public abstract class State implements Cloneable {
     private Range<Integer> range;
     private Exact<Integer> exact;
     public boolean addressed;
+    public Code symptomCode;
+    public Code valueCode;
+    public Code conditionCode;
 
     @Override
     protected void initialize(Module module, String name, JsonObject definition) {
@@ -1643,6 +1666,8 @@ public abstract class State implements Cloneable {
           person.setSymptom(cause, symptom, 0, addressed);
         }
       }
+
+      person.record.recordPatientConditionSymptom(this, time);
       return true;
     }
   }

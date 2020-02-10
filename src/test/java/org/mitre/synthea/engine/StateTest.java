@@ -4,11 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,6 +36,8 @@ import org.mitre.synthea.world.concepts.HealthRecord;
 import org.mitre.synthea.world.concepts.HealthRecord.Code;
 import org.mitre.synthea.world.concepts.HealthRecord.Encounter;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
+import org.mitre.synthea.world.concepts.HealthRecord.PatientCondition;
+import org.mitre.synthea.world.concepts.HealthRecord.ConditionSymptom;
 import org.mitre.synthea.world.concepts.VitalSign;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
@@ -154,7 +158,9 @@ public class StateTest {
     // Should pass through this state immediately without calling the record
     assertTrue(condition.process(person, time));
 
-    verifyZeroInteractions(person.record);
+    // since we track all onset condtions, and not just ones that have been diagnosed
+    // this is not needed
+    // verifyZeroInteractions(person.record);
   }
 
   @Test
@@ -162,7 +168,7 @@ public class StateTest {
     Module module = TestHelper.getFixture("condition_onset.json");
 
     State condition = module.getState("Diabetes");
-    // Should pass through this state immediately without calling the record
+    // Should pass through this state immediately without calling the record (p.s not anymore)
     person.history.add(0, condition);
     assertTrue(condition.process(person, time));
 
@@ -180,6 +186,63 @@ public class StateTest {
     code = enc.conditions.get(0).codes.get(0);
     assertEquals("73211009", code.code);
     assertEquals("Diabetes mellitus", code.display);
+  }
+
+  @Test
+  public void condition_onset_records_symptoms() throws Exception {
+    Module module = TestHelper.getFixture("patient_condition.json");
+
+    State.ConditionOnset condition = (State.ConditionOnset) module.getState("Diabetes");
+    person.history.add(0, condition);
+
+    assertTrue(condition.process(person, time));
+
+    // we should have the patient condition set, and condition undiagnosed
+
+    int numConditions = person.record.patientConditions.size();
+    assertTrue(numConditions >= 1);
+
+    // get the most recent item.
+    PatientCondition currCondition = (PatientCondition) person.record.patientConditions.get(numConditions - 1);
+    assertNotNull(currCondition);
+
+    assertNotNull(currCondition.conditionCode);
+
+    // check that this is indeed diabetes
+    assertEquals(currCondition.conditionCode.code, "73211009");
+
+    // process the symptoms
+    State diabetesSymptom1 = module.getState("Diabetes_Symptom1");
+    person.history.add(0, diabetesSymptom1);
+    assertTrue(diabetesSymptom1.process(person, time));
+
+    State diabetesSymptom2 = module.getState("Diabetes_Symptom2");
+    person.history.add(0, diabetesSymptom2);
+    assertTrue(diabetesSymptom2.process(person, time));
+
+    // at this point all the symptoms should have been recorded
+
+    // check that symptoms have been set.
+    HashMap<String, ConditionSymptom> map = person.record.patientConditionSymptoms.get(currCondition.conditionId);
+    assertNotNull(map);
+
+    // check that two symptoms were recorded
+    assertEquals(2, map.size());
+
+    // check that the right hashmapkeys were used
+    String[] symptomHashMapKeys = {"886711-4:34240081", "886712-4:34240082"};
+    for (int idx = 0; idx <  symptomHashMapKeys.length; idx ++) {
+      assertTrue(map.containsKey(symptomHashMapKeys[idx]));
+      String[] codeValuePair = symptomHashMapKeys[idx].split(":");
+
+      ConditionSymptom symptom = map.get(symptomHashMapKeys[idx]);
+      assertEquals(currCondition.conditionId, symptom.conditionId);
+      assertEquals(currCondition.conditionCode.code, symptom.conditionCode.code);
+
+      assertEquals(codeValuePair[0], symptom.symptomCode.code);
+      assertEquals(codeValuePair[1], symptom.valueCode.code);
+
+    }
   }
 
   @Test
@@ -218,7 +281,9 @@ public class StateTest {
     // Should pass through this state immediately without calling the record
     assertTrue(allergy.process(person, time));
 
-    verifyZeroInteractions(person.record);
+    // since we track all onset condtions, and not just ones that have been diagnosed
+    // this is not needed
+    // verifyZeroInteractions(person.record);
   }
 
   @Test

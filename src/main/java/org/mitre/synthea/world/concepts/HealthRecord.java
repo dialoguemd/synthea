@@ -15,12 +15,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.mitre.synthea.helpers.Utilities;
 import org.mitre.synthea.world.agents.Clinician;
 import org.mitre.synthea.world.agents.Person;
 import org.mitre.synthea.world.agents.Provider;
+import org.mitre.synthea.engine.State.Symptom;
 
 /**
  * HealthRecord contains all the coded entries in a person's health record. This
@@ -407,6 +409,72 @@ public class HealthRecord {
     }
   }
 
+  public class PatientCondition extends Entry {
+    public long diagnosedAt;
+
+    public Code conditionCode;
+
+    public String cause;
+
+    public boolean isDiagnosed;
+
+    public String conditionId;
+
+    public String patientId;
+
+    public PatientCondition(long time, Code code, String patientId) {
+      super(time, code.code);
+
+      this.patientId = patientId;
+      this.conditionId = UUID.randomUUID().toString();
+      this.isDiagnosed = false;
+      this.cause = code.code;
+      this.diagnosedAt = time;
+      this.conditionCode = code;
+    }
+
+    public void diagnoseCondition(long time) {
+      this.isDiagnosed = true;
+      this.diagnosedAt = time;
+    }
+  }
+
+  public class ConditionSymptom extends Entry {
+
+    public String conditionId;
+
+    public String patientId;
+
+    public Code symptomCode;
+
+    public Code conditionCode;
+
+    public Code valueCode;
+
+    public ConditionSymptom(
+            long time,
+            String conditionId,
+            String patientId,
+            Code conditionCode,
+            Code symptomCode,
+            Code valueCode) {
+      super(time, symptomCode.code);
+      this.conditionId = conditionId;
+      this.patientId = patientId;
+      this.conditionCode = conditionCode;
+      this.symptomCode = symptomCode;
+      this.valueCode = valueCode;
+    }
+
+    public String getHashMapKey() {
+      if (this.symptomCode != null && this.valueCode != null) {
+        return this.symptomCode.code + ":" + this.valueCode.code;
+      }
+
+      return null;
+    }
+  }
+
   public class Encounter extends Entry {
     public List<Observation> observations;
     public List<Report> reports;
@@ -460,6 +528,8 @@ public class HealthRecord {
   public Provider provider;
   public List<Encounter> encounters;
   public Map<String, Entry> present;
+  public List<PatientCondition> patientConditions;
+  public HashMap<String, HashMap<String, ConditionSymptom>> patientConditionSymptoms;
   /** recorded death date/time. */
   public Long death;
 
@@ -467,6 +537,8 @@ public class HealthRecord {
     this.person = person;
     encounters = new ArrayList<Encounter>();
     present = new HashMap<String, Entry>();
+    patientConditions = new ArrayList<PatientCondition>();
+    patientConditionSymptoms = new HashMap<String, HashMap<String, ConditionSymptom>>();
   }
 
   public String textSummary() {
@@ -592,6 +664,84 @@ public class HealthRecord {
       condition.stop = time;
       present.remove(condition.type);
     }
+  }
+
+  public void recordPatientCondition(PatientCondition condition) {
+    if (condition != null) {
+      patientConditions.add(condition);
+    }
+  }
+
+  public void recordPatientConditionSymptom(Symptom symptom, long time) {
+    if (symptom.symptomCode == null || symptom.valueCode == null) {
+        return; // symptom does not have a code for it's symptom and finding, nothign to record
+    }
+
+    Code conditionCode = null;
+    if (symptom.conditionCode != null) {
+      conditionCode = symptom.conditionCode;
+    } else {
+      // TODO:
+      // use the module name, see if there is a conditionOnset state.
+      // if there is only one such state, then that must be the condition
+      // if there are multiple then we give up and fail to record the symptom
+      return;
+    }
+
+    if (conditionCode == null) {
+        return;
+    }
+
+    // get the undiagnosed Condition
+    PatientCondition condition = this.getUndiagnosedCondition(conditionCode.code);
+
+    if (condition == null) {
+        // there is no undiagnosed condition ??
+        // the assumption is that symptoms occur in between ConditionOnset and diagnosis
+        // if there is no undiagnosed condition, then we abort
+        return;
+    }
+
+    // now we can record the Condition Symptoms
+    ConditionSymptom conditionSymptom = new ConditionSymptom(
+            time,
+            condition.conditionId,
+            condition.patientId,
+            conditionCode,
+            symptom.symptomCode,
+            symptom.valueCode
+    );
+
+    String hashmapKey = conditionSymptom.getHashMapKey();
+    if (hashmapKey == null) {
+        return;
+    }
+
+    if (!patientConditionSymptoms.containsKey(condition.conditionId)) {
+      patientConditionSymptoms.put(condition.conditionId, new HashMap<String, ConditionSymptom>());
+    }
+
+    HashMap<String, ConditionSymptom> map = patientConditionSymptoms.get(condition.conditionId);
+
+    // so we don't duplicate symptoms for a condition.
+    if (!map.containsKey(hashmapKey)) {
+      map.put(hashmapKey, conditionSymptom);
+    }
+
+    return;
+  }
+
+  public PatientCondition getUndiagnosedCondition(String conditionCode) {
+    PatientCondition condition = null;
+    for (int idx = patientConditions.size() - 1; idx >=0; idx --) {
+      PatientCondition currCondition = patientConditions.get(idx);
+      if (currCondition.type.equals(conditionCode) && !currCondition.isDiagnosed) {
+        condition = currCondition;
+        break;
+      }
+    }
+
+    return condition;
   }
 
   public boolean conditionActive(String type) {
