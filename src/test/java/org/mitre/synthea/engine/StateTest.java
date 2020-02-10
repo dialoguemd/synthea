@@ -899,7 +899,7 @@ public class StateTest {
     // Prevent Null Pointer by giving the person their QOLS
     Map<Integer, Double> qolsByYear = new HashMap<Integer, Double>();
     qolsByYear.put(Utilities.getYear(time) - 1, 1.0);
-    person.attributes.put("QOL", qolsByYear);
+    person.attributes.put(QualityOfLifeModule.QOLS, qolsByYear);
 
     // Now process the prescription
     State med = module.getState("Metformin");
@@ -935,7 +935,7 @@ public class StateTest {
     // Prevent Null Pointer by giving the person their QOLS
     Map<Integer, Double> qolsByYear = new HashMap<Integer, Double>();
     qolsByYear.put(Utilities.getYear(time) - 1, 1.0);
-    person.attributes.put("QOL", qolsByYear);
+    person.attributes.put(QualityOfLifeModule.QOLS, qolsByYear);
 
     // Now process the prescription
     State med = module.getState("Metformin_With_Dosage");
@@ -972,7 +972,7 @@ public class StateTest {
     // Prevent Null Pointer by giving the person their QOLS
     Map<Integer, Double> qolsByYear = new HashMap<Integer, Double>();
     qolsByYear.put(Utilities.getYear(time) - 1, 1.0);
-    person.attributes.put("QOL", qolsByYear);
+    person.attributes.put(QualityOfLifeModule.QOLS, qolsByYear);
 
     // Now process the prescription
     State med = module.getState("Tylenol_As_Needed");
@@ -1050,7 +1050,7 @@ public class StateTest {
     // Prevent Null Pointer by giving the person their QOLS
     Map<Integer, Double> qolsByYear = new HashMap<Integer, Double>();
     qolsByYear.put(Utilities.getYear(time) - 1, 1.0);
-    person.attributes.put("QOL", qolsByYear);
+    person.attributes.put(QualityOfLifeModule.QOLS, qolsByYear);
 
     // Now process the prescription
     State med = module.getState("Insulin_Start");
@@ -1091,7 +1091,7 @@ public class StateTest {
     // Prevent Null Pointer by giving the person their QOLS
     Map<Integer, Double> qolsByYear = new HashMap<Integer, Double>();
     qolsByYear.put(Utilities.getYear(time) - 1, 1.0);
-    person.attributes.put("QOL", qolsByYear);
+    person.attributes.put(QualityOfLifeModule.QOLS, qolsByYear);
 
     // Now process the prescription
     State med = module.getState("Bromocriptine_Start");
@@ -1132,7 +1132,7 @@ public class StateTest {
     // Prevent Null Pointer by giving the person their QOLS
     Map<Integer, Double> qolsByYear = new HashMap<Integer, Double>();
     qolsByYear.put(Utilities.getYear(time) - 1, 1.0);
-    person.attributes.put("QOL", qolsByYear);
+    person.attributes.put(QualityOfLifeModule.QOLS, qolsByYear);
 
     // Now process the prescription
     State med = module.getState("Metformin_Start");
