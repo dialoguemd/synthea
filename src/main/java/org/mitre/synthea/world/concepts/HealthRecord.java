@@ -673,32 +673,25 @@ public class HealthRecord {
   }
 
   public void recordPatientConditionSymptom(Symptom symptom, long time) {
-    if (symptom.symptomCode == null || symptom.valueCode == null) {
+    // if no conditionCode is present, kick 'em out.
+    if (symptom.symptomCode == null || symptom.valueCode == null || symptom.conditionCodes == null) {
         return; // symptom does not have a code for it's symptom and finding, nothign to record
     }
 
+    PatientCondition condition = null;
     Code conditionCode = null;
-    if (symptom.conditionCode != null) {
-      conditionCode = symptom.conditionCode;
-    } else {
-      // TODO:
-      // use the module name, see if there is a conditionOnset state.
-      // if there is only one such state, then that must be the condition
-      // if there are multiple then we give up and fail to record the symptom
-      return;
+
+    // get the undiagnosed Condition
+    for (Iterator<Code> iterator = symptom.conditionCodes.iterator(); iterator.hasNext();) {
+      Code code = iterator.next();
+      condition = this.getUndiagnosedCondition(code.code);
+      if (condition != null) {
+        conditionCode = code;
+        break;
+      }
     }
 
     if (conditionCode == null) {
-        return;
-    }
-
-    // get the undiagnosed Condition
-    PatientCondition condition = this.getUndiagnosedCondition(conditionCode.code);
-
-    if (condition == null) {
-        // there is no undiagnosed condition ??
-        // the assumption is that symptoms occur in between ConditionOnset and diagnosis
-        // if there is no undiagnosed condition, then we abort
         return;
     }
 
@@ -737,11 +730,11 @@ public class HealthRecord {
       PatientCondition currCondition = patientConditions.get(idx);
       if (currCondition.type.equals(conditionCode) && !currCondition.isDiagnosed) {
         condition = currCondition;
-        break;
+        return condition;
       }
     }
 
-    return condition;
+    return null;
   }
 
   public boolean conditionActive(String type) {
@@ -941,7 +934,7 @@ public class HealthRecord {
   /**
    * Remove Chronic Medication if stopped medication is a Chronic Medication.
    *
-   * @param Primary code (RxNorm) for the medication.
+   * @param type  Primary code (RxNorm) for the medication.
    */
   private void chronicMedicationEnd(String type) {
     if (person.chronicMedications.containsKey(type)) {

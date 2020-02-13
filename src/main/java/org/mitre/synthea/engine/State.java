@@ -1629,7 +1629,7 @@ public abstract class State implements Cloneable {
     public boolean addressed;
     public Code symptomCode;
     public Code valueCode;
-    public Code conditionCode;
+    public List<Code> conditionCodes;
 
     @Override
     protected void initialize(Module module, String name, JsonObject definition) {
@@ -1667,7 +1667,10 @@ public abstract class State implements Cloneable {
         }
       }
 
-      person.record.recordPatientConditionSymptom(this, time);
+      if (exact == null || exact.quantity.equals(0)) {
+        // do not record if the exact quantity is 0; this is a "Symptom_Ends" symptom
+        person.record.recordPatientConditionSymptom(this, time);
+      }
       return true;
     }
   }

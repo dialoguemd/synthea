@@ -22,11 +22,11 @@
         "low": 25,
         "high": 75
       },
-      "condition_code": {
+      "condition_codes": [{
         "system": "SNOMED-CT",
         "code": "73211009",
         "display": "Diabetes mellitus"
-      },
+      }],
       "symptom_code": {
         "system": "LOINC",
         "code": "886711-4",
@@ -46,11 +46,11 @@
         "low": 25,
         "high": 50
       },
-      "condition_code": {
+      "condition_codes": [{
         "system": "SNOMED-CT",
         "code": "73211009",
         "display": "Diabetes mellitus"
-      },
+      }],
       "symptom_code": {
         "system": "LOINC",
         "code": "886712-4",
