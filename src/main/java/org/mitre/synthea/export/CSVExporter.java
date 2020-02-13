@@ -636,7 +636,7 @@ public class CSVExporter {
     s.append(condition.conditionId).append(',');
     s.append(condition.patientId).append(',');
     s.append(condition.conditionCode.code).append(',');
-    s.append(condition.conditionCode.display).append(',');
+    s.append(clean(condition.conditionCode.display)).append(',');
     s.append(dateFromTimestamp(condition.start)).append(',');
     if (condition.isDiagnosed) {
       s.append(dateFromTimestamp(condition.diagnosedAt));
@@ -652,9 +652,9 @@ public class CSVExporter {
     s.append(symptom.conditionId).append(',');
     s.append(symptom.patientId).append(',');
     s.append(symptom.symptomCode.code).append(',');
-    s.append(symptom.symptomCode.display).append(',');
+    s.append(clean(symptom.symptomCode.display)).append(',');
     s.append(symptom.valueCode.code).append(',');
-    s.append(symptom.valueCode.display);
+    s.append(clean(symptom.valueCode.display));
 
     s.append(NEWLINE);
     write(s.toString(), patientConditionSymptoms);
