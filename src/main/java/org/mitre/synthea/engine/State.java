@@ -1673,6 +1673,10 @@ public abstract class State implements Cloneable {
       }
       return true;
     }
+
+    public String getSymptom() {
+      return symptom;
+    }
   }
 
   /**

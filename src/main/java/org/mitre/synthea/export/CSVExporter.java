@@ -243,7 +243,7 @@ public class CSVExporter {
     payerTransitions.write(NEWLINE);
     patientConditions.write("Id,PATIENT,CODE,DESCRIPTION,ONSET,DIAGNOSED");
     patientConditions.write(NEWLINE);
-    patientConditionSymptoms.write("CONDITION_ID,PATIENT,SYMPTOM_CODE,VALUE_CODE");
+    patientConditionSymptoms.write("CONDITION_ID,PATIENT,SYMPTOM_CODE,SYMPTOM_DISPLAY,VALUE_CODE,VALUE_DISPLAY");
     patientConditionSymptoms.write(NEWLINE);
   }
 
@@ -647,12 +647,12 @@ public class CSVExporter {
   }
 
   private void patientConditionSymptom(ConditionSymptom symptom) throws IOException {
-    // patientConditionSymptoms.write("CONDITION_ID,PATIENT,SYMPTOM_CODE,SYMPTOM_REASON,VALUE_CODE,VALUE_REASON");
+    // patientConditionSymptoms.write("CONDITION_ID,PATIENT,SYMPTOM_CODE,SYMPTOM_DISPLAY,VALUE_CODE,VALUE_DISPLAY");
     StringBuilder s = new StringBuilder();
     s.append(symptom.conditionId).append(',');
     s.append(symptom.patientId).append(',');
     s.append(symptom.symptomCode.code).append(',');
-    s.append(clean(symptom.symptomCode.display)).append(',');
+    s.append(symptom.symptomName).append(',');
     s.append(symptom.valueCode.code).append(',');
     s.append(clean(symptom.valueCode.display));
 

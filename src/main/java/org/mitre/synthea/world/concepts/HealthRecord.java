@@ -445,6 +445,8 @@ public class HealthRecord {
 
     public String patientId;
 
+    public String symptomName;
+
     public Code symptomCode;
 
     public Code conditionCode;
@@ -455,6 +457,7 @@ public class HealthRecord {
             long time,
             String conditionId,
             String patientId,
+            String symptomName,
             Code conditionCode,
             Code symptomCode,
             Code valueCode) {
@@ -464,6 +467,7 @@ public class HealthRecord {
       this.conditionCode = conditionCode;
       this.symptomCode = symptomCode;
       this.valueCode = valueCode;
+      this.symptomName = symptomName;
     }
 
     public String getHashMapKey() {
@@ -700,6 +704,7 @@ public class HealthRecord {
             time,
             condition.conditionId,
             condition.patientId,
+            symptom.getSymptom(),
             conditionCode,
             symptom.symptomCode,
             symptom.valueCode
