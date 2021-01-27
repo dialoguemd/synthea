@@ -5,6 +5,9 @@
 .gradle
 /build/**
 bin/**
+.idea
+tmp_modules
+synthea.iml
 
 /.gradle/
 /bin/

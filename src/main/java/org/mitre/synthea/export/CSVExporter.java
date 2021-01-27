@@ -15,8 +15,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,11 +33,13 @@ import org.mitre.synthea.world.agents.Provider;
 import org.mitre.synthea.world.concepts.HealthRecord;
 import org.mitre.synthea.world.concepts.HealthRecord.CarePlan;
 import org.mitre.synthea.world.concepts.HealthRecord.Code;
+import org.mitre.synthea.world.concepts.HealthRecord.ConditionSymptom;
 import org.mitre.synthea.world.concepts.HealthRecord.Encounter;
 import org.mitre.synthea.world.concepts.HealthRecord.Entry;
 import org.mitre.synthea.world.concepts.HealthRecord.ImagingStudy;
 import org.mitre.synthea.world.concepts.HealthRecord.Medication;
 import org.mitre.synthea.world.concepts.HealthRecord.Observation;
+import org.mitre.synthea.world.concepts.HealthRecord.PatientCondition;
 import org.mitre.synthea.world.concepts.HealthRecord.Procedure;
 
 /**
@@ -107,6 +112,16 @@ public class CSVExporter {
   private FileWriter payerTransitions;
 
   /**
+   * Writer for patientConditions.csv
+   */
+  private FileWriter patientConditions;
+
+  /**
+   * Writer for patient Condition symptoms.csv
+   */
+  private FileWriter patientConditionSymptoms;
+
+  /**
    * System-dependent string for a line break. (\n on Mac, *nix, \r\n on Windows)
    */
   private static final String NEWLINE = System.lineSeparator();
@@ -143,6 +158,8 @@ public class CSVExporter {
       File immunizationsFile = outputDirectory.resolve("immunizations.csv").toFile();
       File encountersFile = outputDirectory.resolve("encounters.csv").toFile();
       File imagingStudiesFile = outputDirectory.resolve("imaging_studies.csv").toFile();
+      File patientConditionsFile = outputDirectory.resolve("patient_conditions.csv").toFile();
+      File patientConditionSymptomsFile = outputDirectory.resolve("patient_condition_symptoms.csv").toFile();
 
       patients = new FileWriter(patientsFile, append);
       allergies = new FileWriter(allergiesFile, append);
@@ -154,6 +171,8 @@ public class CSVExporter {
       immunizations = new FileWriter(immunizationsFile, append);
       encounters = new FileWriter(encountersFile, append);
       imagingStudies = new FileWriter(imagingStudiesFile, append);
+      patientConditions = new FileWriter(patientConditionsFile, append);
+      patientConditionSymptoms = new FileWriter(patientConditionSymptomsFile, append);
 
       File organizationsFile = outputDirectory.resolve("organizations.csv").toFile();
       File providersFile = outputDirectory.resolve("providers.csv").toFile();
@@ -222,6 +241,10 @@ public class CSVExporter {
     payers.write(NEWLINE);
     payerTransitions.write("PATIENT,START_YEAR,END_YEAR,PAYER,OWNERSHIP");
     payerTransitions.write(NEWLINE);
+    patientConditions.write("Id,PATIENT,CODE,DESCRIPTION,ONSET,DIAGNOSED");
+    patientConditions.write(NEWLINE);
+    patientConditionSymptoms.write("CONDITION_ID,PATIENT,SYMPTOM_CODE,SYMPTOM_DISPLAY,VALUE_CODE,VALUE_DISPLAY");
+    patientConditionSymptoms.write(NEWLINE);
   }
 
   /**
@@ -372,6 +395,24 @@ public class CSVExporter {
         imagingStudy(personID, encounterID, imagingStudy);
       }
     }
+
+    // let's get the patient conditions
+    for (PatientCondition patientCondition: person.record.patientConditions) {
+      patientCondition(patientCondition);
+
+      // pull the symptoms associated with this condition
+      HashMap<String, ConditionSymptom> map =
+              person.record.patientConditionSymptoms.get(patientCondition.conditionId);
+      if (map != null) {
+        Set <String> keys = map.keySet();
+        Iterator<String> keysItr = keys.iterator();
+        while (keysItr.hasNext()) {
+          String currKey = keysItr.next();
+          ConditionSymptom symptom = map.get(currKey);
+          patientConditionSymptom(symptom);
+        }
+      }
+    }
     CSVExporter.getInstance().exportPayerTransitions(person, time);
 
     int yearsOfHistory = Integer.parseInt(Config.get("exporter.years_of_history"));
@@ -418,6 +459,8 @@ public class CSVExporter {
     procedures.flush();
     immunizations.flush();
     imagingStudies.flush();
+    patientConditions.flush();
+    patientConditionSymptoms.flush();
   }
 
   /**
@@ -585,6 +628,36 @@ public class CSVExporter {
 
     s.append(NEWLINE);
     write(s.toString(), conditions);
+  }
+
+  private void patientCondition(PatientCondition condition) throws IOException {
+    // "Id,PATIENT,CODE,DESCRIPTION,ONSET,DIAGNOSED";
+    StringBuilder s = new StringBuilder();
+    s.append(condition.conditionId).append(',');
+    s.append(condition.patientId).append(',');
+    s.append(condition.conditionCode.code).append(',');
+    s.append(clean(condition.conditionCode.display)).append(',');
+    s.append(dateFromTimestamp(condition.start)).append(',');
+    if (condition.isDiagnosed) {
+      s.append(dateFromTimestamp(condition.diagnosedAt));
+    }
+
+    s.append(NEWLINE);
+    write(s.toString(), patientConditions);
+  }
+
+  private void patientConditionSymptom(ConditionSymptom symptom) throws IOException {
+    // patientConditionSymptoms.write("CONDITION_ID,PATIENT,SYMPTOM_CODE,SYMPTOM_DISPLAY,VALUE_CODE,VALUE_DISPLAY");
+    StringBuilder s = new StringBuilder();
+    s.append(symptom.conditionId).append(',');
+    s.append(symptom.patientId).append(',');
+    s.append(symptom.symptomCode.code).append(',');
+    s.append(symptom.symptomName).append(',');
+    s.append(symptom.valueCode.code).append(',');
+    s.append(clean(symptom.valueCode.display));
+
+    s.append(NEWLINE);
+    write(s.toString(), patientConditionSymptoms);
   }
 
   /**

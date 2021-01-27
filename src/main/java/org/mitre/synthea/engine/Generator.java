@@ -339,8 +339,10 @@ public class Generator {
         long time = start;
         while (person.alive(time) && time < stop) {
 
+          //
           healthInsuranceModule.process(person, time + timestep);
-          encounterModule.process(person, time);
+          // We don't need these encounters anymore
+          // encounterModule.process(person, time);
 
           Iterator<Module> iter = modules.iterator();
           while (iter.hasNext()) {
@@ -351,7 +353,7 @@ public class Generator {
               iter.remove(); // this module has completed/terminated.
             }
           }
-          encounterModule.endWellnessEncounter(person, time);
+          //encounterModule.endWellnessEncounter(person, time);
 
           time += timestep;
         }

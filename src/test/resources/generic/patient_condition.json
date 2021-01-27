@@ -1,0 +1,88 @@
+{
+  "name": "ConditionOnset",
+  "states": {
+    "Initial": {
+      "type": "Initial",
+      "direct_transition": "Diabetes"
+    },
+    "Diabetes": {
+      "type": "ConditionOnset",
+      "codes": [{
+        "system": "SNOMED-CT",
+        "code": "73211009",
+        "display": "Diabetes mellitus"
+      }],
+      "target_encounter": "ED_Visit",
+      "direct_transition": "Diabetes_Symptom1"
+    },
+    "Diabetes_Symptom1": {
+      "type": "Symptom",
+      "symptom": "Cough",
+      "range": {
+        "low": 25,
+        "high": 75
+      },
+      "condition_codes": [{
+        "system": "SNOMED-CT",
+        "code": "73211009",
+        "display": "Diabetes mellitus"
+      }],
+      "symptom_code": {
+        "system": "LOINC",
+        "code": "886711-4",
+        "display": "Is there cough"
+      },
+      "value_code": {
+        "system": "SNOMED-CT",
+        "code": "34240081",
+        "display": "Cough (finding)"
+      },
+      "direct_transition": "Diabetes_Symptom2"
+    },
+    "Diabetes_Symptom2": {
+      "type": "Symptom",
+      "symptom": "Mucus",
+      "range": {
+        "low": 25,
+        "high": 50
+      },
+      "condition_codes": [{
+        "system": "SNOMED-CT",
+        "code": "73211009",
+        "display": "Diabetes mellitus"
+      }],
+      "symptom_code": {
+        "system": "LOINC",
+        "code": "886712-4",
+        "display": "Is there mucus"
+      },
+      "value_code": {
+        "system": "SNOMED-CT",
+        "code": "34240082",
+        "display": "Mucus (finding)"
+      },
+      "direct_transition": "6_Month_Delay"
+    },
+    "6_Month_Delay": {
+      "type": "Delay",
+      "exact": {
+        "quantity": 6,
+        "unit": "months"
+      },
+      "direct_transition": "ED_Visit"
+    },
+    "ED_Visit": {
+      "type": "Encounter",
+      "encounter_class": "emergency",
+      "codes": [{
+        "system": "SNOMED-CT",
+        "code": "50849002",
+        "display": "Emergency Room Admission"
+      }],
+      "direct_transition": "Terminal"
+    },
+    "Terminal": {
+      "type": "Terminal"
+    }
+  }
+}
